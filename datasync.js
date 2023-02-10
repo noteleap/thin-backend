@@ -149,7 +149,9 @@ class DataSyncController {
 
         // Remove request from array, as we don't need it anymore. If we don't remove it we will
         // build up a lot of memory and slow down the app over time
-        this.pendingRequests.splice(this.pendingRequests.indexOf(request), 1);
+        if (request) {
+          this.pendingRequests.splice(this.pendingRequests.indexOf(request), 1);
+        }
         
         this.receivedFirstResponse = true;
 
