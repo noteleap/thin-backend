@@ -69,42 +69,11 @@ class DataSyncController {
             return await this.pendingConnection;
         }
 
-        const connect = () => new Promise((resolve, reject) => {
+        const connect = () => new Promise(async (resolve, reject) => {
             // When Thin is called from node.js there's no WebSocket available
             if (typeof WebSocket === 'undefined') {
-                resolve({
-                    send: async (message) => {
-                        const adjustForHTTP = url => url.replace('ws://', 'http://').replace('wss://', 'https://')
-                        const url = adjustForHTTP(DataSyncController.getWSUrl());
-                        const jwt = DataSyncController.getJWT();
-                        const headers = { 'Content-Type': 'application/json' };
-                        if (jwt !== null) {
-                            headers['Authorization'] = 'Bearer ' + jwt;
-                        }
-
-                        try {
-                            const response = await fetch(url, {
-                                method: 'POST',
-                                body: message,
-                                headers
-                            });
-                            const body = await response.json();
-                            this.onMessage(body);
-                        } catch (e) {
-                            console.error("thin backend error. operation:", message, "error:", e);
-                            try {
-                                // try to report error to request
-                                const { requestId } = JSON.parse(message);
-                                this.onMessage({ requestId, tag: "DataSyncError", errorMessage: e });
-                            } catch {
-                            }
-                        }
-                    },
-                    close: () => {
-                        // Nothing to do here
-                    }
-                })
-            } else {
+                var { WebSocket } = (await import('isomorphic-ws')).default;
+            }
                 const socket = new WebSocket(DataSyncController.getWSUrl())
 
                 socket.onopen = event => {
@@ -120,7 +89,6 @@ class DataSyncController {
                 }
 
                 socket.onerror = (event) => reject(event);
-            }
         });
         const wait = timeout => new Promise((resolve) => setTimeout(resolve, timeout));
 
