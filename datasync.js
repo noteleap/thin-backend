@@ -73,7 +73,7 @@ class DataSyncController {
             // When Thin is called from node.js there's no WebSocket available
             if (typeof WebSocket === 'undefined') {
                 resolve({
-                    send: (message) => {
+                    send: async (message) => {
                         const adjustForHTTP = url => url.replace('ws://', 'http://').replace('wss://', 'https://')
                         const url = adjustForHTTP(DataSyncController.getWSUrl());
                         const jwt = DataSyncController.getJWT();
@@ -82,13 +82,23 @@ class DataSyncController {
                             headers['Authorization'] = 'Bearer ' + jwt;
                         }
 
-                        return fetch(url, {
+                        try {
+                            const response = await fetch(url, {
                                 method: 'POST',
                                 body: message,
                                 headers
-                            })
-                            .then(response => response.json())
-                            .then(body => this.onMessage(body))
+                            });
+                            const body = await response.json();
+                            this.onMessage(body);
+                        } catch (e) {
+                            console.error("thin backend error. operation:", message, "error:", e);
+                            try {
+                                // try to report error to request
+                                const { requestId } = JSON.parse(message);
+                                this.onMessage({ requestId, tag: "DataSyncError", errorMessage: e });
+                            } catch {
+                            }
+                        }
                     },
                     close: () => {
                         // Nothing to do here
