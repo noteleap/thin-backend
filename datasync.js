@@ -1,5 +1,7 @@
 import { recordMatchesQuery } from './querybuilder.js';
 
+let WebSocket = globalThis?.window?.WebSocket;
+
 class DataSyncController {
     static instance = null;
     static ihpBackendHost = null;
@@ -72,7 +74,7 @@ class DataSyncController {
         const connect = () => new Promise(async (resolve, reject) => {
             // When Thin is called from node.js there's no WebSocket available
             if (typeof WebSocket === 'undefined') {
-                var { WebSocket } = (await import('isomorphic-ws')).default;
+                WebSocket = (await import('isomorphic-ws')).default;
             }
                 const socket = new WebSocket(DataSyncController.getWSUrl())
 
